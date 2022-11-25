@@ -24,6 +24,7 @@ public class SelfPage extends TopNavigationBar{
 	@FindBy(xpath = "(//*[@class='title is-6'])[4]")
 	public WebElement batch;
 
-	@FindBy(xpath = "(//*[@class='title is-6'])[5]")
+//	@FindBy(xpath = "(//*[@class='title is-6'])[5]")
+	@FindBy(xpath = "//p[.='campus']/preceding-sibling::p")
 	public WebElement campus;
 }

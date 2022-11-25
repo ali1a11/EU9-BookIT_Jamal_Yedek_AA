@@ -225,10 +225,14 @@ public class ApiStepDefs {
 
         // to get batch number
         // send a GET request "/api/batches/my" endpoint to get current user info
-        batchNumberFromAPI = given().accept(ContentType.JSON)
-                .and().header("Authorization", token)
-                .when().get(ConfigurationReader.get("base_url") + "/api/batches/my")
-                .body().path("number");
+
+        if (!roleFromAPI.equals("teacher")) {
+            batchNumberFromAPI = given().accept(ContentType.JSON)
+                    .and().header("Authorization", token)
+                    .when().get(ConfigurationReader.get("base_url") + "/api/batches/my")
+                    .body().path("number");
+        }
+
 
 //        System.out.println("batchNumber = " + batchNumberFromAPI);
 
@@ -243,10 +247,12 @@ public class ApiStepDefs {
 
         // to get team name
         // send a GET request "/api/teams/my" endpoint to get current user info
-        teamNameFromAPI = given().accept(ContentType.JSON)
-                .and().header("Authorization", token)
-                .when().get(ConfigurationReader.get("base_url") + "/api/teams/my")
-                .body().path("name");
+        if (!roleFromAPI.equals("teacher")) {
+            teamNameFromAPI = given().accept(ContentType.JSON)
+                    .and().header("Authorization", token)
+                    .when().get(ConfigurationReader.get("base_url") + "/api/teams/my")
+                    .body().path("name");
+        }
 
 //        System.out.println("teamName = " + teamNameFromAPI);
     }
@@ -298,6 +304,82 @@ public class ApiStepDefs {
         Assert.assertEquals(teamNameFromAPI, actualTeamFromUI);
         Assert.assertEquals(batchNumberFromAPI, actualBatchNumberFromUI);
         Assert.assertEquals(campusFromAPI, actualCampusFromUI);
+
+    }
+
+    @Then("UI, API and Database user information set must be match as users {string}")
+    public void ui_API_and_Database_user_information_set_must_be_match_as_users(String role) {
+
+        String query = "";
+
+// get information from database
+        if (role.equals("teacher")) {
+            query = "select users.id, users.firstname, users.lastname, users.role, c.location from users join campus c on c.id = users.campus_id\n" +
+                    "where users.id = " + IDFromAPI; //11516
+
+        } else if (role.equals("student-team-member") || role.equals("student-team-leader")) {
+            query = "select users.id, users.firstname, users.lastname, users.role, c.location, t.name, t.batch_number from users join team t on users.team_id = t.id join campus c on c.id = users.campus_id\n" +
+                    "where users.id = " + IDFromAPI;
+        } else {
+            System.out.println("Wrong role !!!");
+        }
+
+        Map<String, Object> dbMap = DBUtils.getRowMap(query);
+
+        // save database info into variables
+        String expectedFirstNameFromDB = (String) dbMap.get("firstname");
+        String expectedLastNameFromDB = (String) dbMap.get("lastname");
+        String expectedFullNameFromDB = expectedFirstNameFromDB + " " + expectedLastNameFromDB;
+        String expectedRoleFromDB = (String) dbMap.get("role");
+        String expectedCampusLocationFromDB = (String) dbMap.get("location");
+        String expectedTeamNameFromDB = "";
+        int expectedBatchNumberFromDB = 0;
+
+        if (role.equals("student-team-member") || role.equals("student-team-leader")) {
+            expectedTeamNameFromDB = (String) dbMap.get("name");
+            expectedBatchNumberFromDB = (int) dbMap.get("batch_number");
+        }
+
+//        System.out.println("expectedFullNameFromDB = " + expectedFullNameFromDB);
+//        System.out.println("expectedBatchNumberFromDB = " + expectedBatchNumberFromDB);
+
+        // get information from UI
+        SelfPage selfPage = new SelfPage();
+
+        String actualNameFromUI = selfPage.name.getText();
+        String actualRoleFromUI = selfPage.role.getText();
+        String actualCampusFromUI = selfPage.campus.getText();
+        String actualTeamFromUI ="";
+        int actualBatchNumberFromUI =0;
+
+        if(!role.equals("teacher")){
+            actualTeamFromUI = selfPage.team.getText();
+            String actualBatchNumberFromUIString = selfPage.batch.getText();
+            actualBatchNumberFromUI = Integer.parseInt(actualBatchNumberFromUIString.substring(actualBatchNumberFromUIString.indexOf('#') + 1));
+        }
+
+
+        // UI vs DB
+        Assert.assertEquals(expectedFullNameFromDB, actualNameFromUI);
+        Assert.assertEquals(expectedRoleFromDB, actualRoleFromUI);
+        Assert.assertEquals(expectedCampusLocationFromDB, actualCampusFromUI);
+
+        if(!role.equals("teacher")){
+            Assert.assertEquals(expectedTeamNameFromDB, actualTeamFromUI);
+            Assert.assertEquals(expectedBatchNumberFromDB, actualBatchNumberFromUI);
+        }
+
+        // UI vs API
+        Assert.assertEquals(fullNameFromAPI, actualNameFromUI);
+        Assert.assertEquals(roleFromAPI, actualRoleFromUI);
+        Assert.assertEquals(campusFromAPI, actualCampusFromUI);
+
+        if(!role.equals("teacher")){
+            Assert.assertEquals(teamNameFromAPI, actualTeamFromUI);
+            Assert.assertEquals(batchNumberFromAPI, actualBatchNumberFromUI);
+        }
+
+
 
     }
 

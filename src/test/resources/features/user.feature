@@ -34,7 +34,9 @@ Feature: User Verification
       | wcanadinea@ihg.com | waverleycanadine |
       | blyst6@si.edu      | barbabaslyst     |
 
-  @wip @db
+
+  @db
+  # not for teachers
   Scenario Outline: three point verification (UI, API, Database) DDT Homework
     Given user logs in using "<email>" "<password>"
     And user is on the my self page
@@ -45,6 +47,20 @@ Feature: User Verification
       | email              | password         |
       | raymond@cydeo.com  | abs123           |
       | wcanadinea@ihg.com | waverleycanadine |
+
+
+  @wip @db
+  Scenario Outline: three point verification (UI, API, Database) DDT Homework vs2
+    Given user logs in using "<email>" "<password>"
+    And user is on the my self page
+    Given I logged Bookit api using "<email>" and "<password>"
+    When I get the current user information set from api
+    Then UI, API and Database user information set must be match as users "<role>"
+    Examples:
+      | email              | password         | role                |
+      | raymond@cydeo.com  | abs123           | student-team-member |
+      | wcanadinea@ihg.com | waverleycanadine | student-team-leader |
+      | blyst6@si.edu      | barbabaslyst     | teacher             |
 
 
 

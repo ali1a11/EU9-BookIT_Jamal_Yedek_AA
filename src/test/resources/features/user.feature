@@ -35,4 +35,12 @@ Feature: User Verification
       | blyst6@si.edu      | barbabaslyst     |
 
 
+  Scenario Outline: three point verification (UI, API, Database) DDT Homework
+    Given user logs in using "<email>" "<password>"
+    And user is on the my self page
+    Given I logged Bookit api using "<email>" and "<password>"
+    When I get the current user information from api
+    Then UI, API and Database user information must be match
+
+
 

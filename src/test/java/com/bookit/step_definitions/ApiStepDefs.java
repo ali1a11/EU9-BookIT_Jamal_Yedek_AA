@@ -10,7 +10,6 @@ import io.cucumber.java.en.When;
 import io.restassured.http.ContentType;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
-import io.restassured.response.ValidatableResponse;
 import org.junit.Assert;
 
 import java.util.Map;
@@ -195,6 +194,126 @@ public class ApiStepDefs {
                 .when().delete(ConfigurationReader.get("base_url") + "/api/students/{id}")
                 .then().statusCode(204);
         */
+    }
+
+    Long IDFromAPI;
+    String firstNameFromAPI;
+    String lastNameFromAPI;
+    String fullNameFromAPI;
+    String roleFromAPI;
+    int batchNumberFromAPI;
+    String teamNameFromAPI;
+    String campusFromAPI;
+
+    @When("I get the current user information set from api")
+    public void i_get_the_current_user_information_set_from_api() {
+
+        // send a GET request "/api/users/me" endpoint to get current user info
+        response = given().accept(ContentType.JSON)
+                .and().header("Authorization", token)
+                .when().get(ConfigurationReader.get("base_url") + "/api/users/me");
+
+        // get information from API
+        JsonPath jsonPath = response.jsonPath();
+
+        // save API info into variables
+        IDFromAPI = jsonPath.getLong("id");
+        firstNameFromAPI = jsonPath.getString("firstName");
+        lastNameFromAPI = jsonPath.getString("lastName");
+        fullNameFromAPI = firstNameFromAPI + " " + lastNameFromAPI;
+        roleFromAPI = jsonPath.getString("role");
+
+        // to get batch number
+        // send a GET request "/api/batches/my" endpoint to get current user info
+        batchNumberFromAPI = given().accept(ContentType.JSON)
+                .and().header("Authorization", token)
+                .when().get(ConfigurationReader.get("base_url") + "/api/batches/my")
+                .body().path("number");
+
+//        System.out.println("batchNumber = " + batchNumberFromAPI);
+
+        // to get campus
+        // send a GET request "/api/campuses/my" endpoint to get current user info
+        campusFromAPI = given().accept(ContentType.JSON)
+                .and().header("Authorization", token)
+                .when().get(ConfigurationReader.get("base_url") + "/api/campuses/my")
+                .body().path("location");
+
+//        System.out.println("campusLocation = " + campusFromAPI);
+
+        // to get team name
+        // send a GET request "/api/teams/my" endpoint to get current user info
+        teamNameFromAPI = given().accept(ContentType.JSON)
+                .and().header("Authorization", token)
+                .when().get(ConfigurationReader.get("base_url") + "/api/teams/my")
+                .body().path("name");
+
+//        System.out.println("teamName = " + teamNameFromAPI);
+    }
+
+    @Then("UI, API and Database user information set must be match")
+    public void ui_API_and_Database_user_information_set_must_be_match() {
+
+        // get information from database
+        // for jdbc @db over Scenario (in Hooks @Before("@db") and @After("@db")) custom tags)
+
+        String query2 = "select users.id, users.firstname, users.lastname, users.role, c.location, t.name, t.batch_number from users join team t on users.team_id = t.id join campus c on c.id = users.campus_id\n" +
+                "where users.id = " + IDFromAPI; // ID!!!
+
+        Map<String, Object> dbMap2 = DBUtils.getRowMap(query2);
+
+//        System.out.println("dbMap2 = " + dbMap2);
+
+        // save database info into variables
+        Long expextedIDFromDB = (Long) dbMap2.get("id");
+        String expectedFirstNameFromDB = (String) dbMap2.get("firstname");
+        String expectedLastNameFromDB = (String) dbMap2.get("lastname");
+        String expectedFullNameFromDB = expectedFirstNameFromDB + " " + expectedLastNameFromDB;
+        String expectedRoleFromDB = (String) dbMap2.get("role");
+        String expectedTeamNameFromDB = (String) dbMap2.get("name");
+        int expectedBatchNumberFromDB = (int) dbMap2.get("batch_number");
+        String expectedCampusLocationFromDB = (String) dbMap2.get("location");
+
+
+        // get information from UI
+        SelfPage selfPage = new SelfPage();
+
+        String actualNameFromUI = selfPage.name.getText();
+        String actualRoleFromUI = selfPage.role.getText();
+        String actualTeamFromUI = selfPage.team.getText();
+        String actualBatchNumberFromUIString = selfPage.batch.getText();
+        int actualBatchNumberFromUI = Integer.parseInt(actualBatchNumberFromUIString.substring(actualBatchNumberFromUIString.indexOf('#') + 1));
+        String actualCampusFromUI = selfPage.campus.getText();
+
+        // UI vs DB
+
+
+
+        Assert.assertEquals(expectedFullNameFromDB, actualNameFromUI);
+        Assert.assertEquals(expectedRoleFromDB, actualRoleFromUI);
+        Assert.assertEquals(expectedTeamNameFromDB, actualTeamFromUI);
+        Assert.assertEquals(expectedCampusLocationFromDB, actualCampusFromUI);
+
+        if(actualRoleFromUI.equals("teacher")){
+
+        } else {
+            Assert.assertEquals(expectedBatchNumberFromDB, actualBatchNumberFromUI);
+        }
+
+        // UI vs API
+        Assert.assertEquals(fullNameFromAPI, actualNameFromUI);
+        Assert.assertEquals(roleFromAPI, actualRoleFromUI);
+
+        Assert.assertEquals(teamNameFromAPI, actualTeamFromUI);
+        Assert.assertEquals(campusFromAPI, actualCampusFromUI);
+
+        if(actualRoleFromUI.equals("teacher")){
+
+        } else {
+            Assert.assertEquals(batchNumberFromAPI, actualBatchNumberFromUI);
+        }
+
+
     }
 
 

@@ -258,7 +258,7 @@ public class ApiStepDefs {
         // for jdbc @db over Scenario (in Hooks @Before("@db") and @After("@db")) custom tags)
 
         String query2 = "select users.id, users.firstname, users.lastname, users.role, c.location, t.name, t.batch_number from users join team t on users.team_id = t.id join campus c on c.id = users.campus_id\n" +
-                "where users.id = " + IDFromAPI; // ID!!!
+                "where users.id = " + IDFromAPI;
 
         Map<String, Object> dbMap2 = DBUtils.getRowMap(query2);
 
@@ -286,33 +286,18 @@ public class ApiStepDefs {
         String actualCampusFromUI = selfPage.campus.getText();
 
         // UI vs DB
-
-
-
         Assert.assertEquals(expectedFullNameFromDB, actualNameFromUI);
         Assert.assertEquals(expectedRoleFromDB, actualRoleFromUI);
         Assert.assertEquals(expectedTeamNameFromDB, actualTeamFromUI);
+        Assert.assertEquals(expectedBatchNumberFromDB, actualBatchNumberFromUI);
         Assert.assertEquals(expectedCampusLocationFromDB, actualCampusFromUI);
-
-        if(actualRoleFromUI.equals("teacher")){
-
-        } else {
-            Assert.assertEquals(expectedBatchNumberFromDB, actualBatchNumberFromUI);
-        }
 
         // UI vs API
         Assert.assertEquals(fullNameFromAPI, actualNameFromUI);
         Assert.assertEquals(roleFromAPI, actualRoleFromUI);
-
         Assert.assertEquals(teamNameFromAPI, actualTeamFromUI);
+        Assert.assertEquals(batchNumberFromAPI, actualBatchNumberFromUI);
         Assert.assertEquals(campusFromAPI, actualCampusFromUI);
-
-        if(actualRoleFromUI.equals("teacher")){
-
-        } else {
-            Assert.assertEquals(batchNumberFromAPI, actualBatchNumberFromUI);
-        }
-
 
     }
 
